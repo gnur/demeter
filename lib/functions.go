@@ -79,6 +79,7 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*Scra
 		timeout:   10 * time.Second,
 		logger:    log.WithField("host", parsed.Hostname()),
 	}
+	s.u = parsed
 
 	r := ScrapeResult{
 		Start:   time.Now(),
@@ -272,7 +273,7 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 			}).Debug("book too old")
 			continue
 		}
-		if bookInDatabase(&b) {
+		if !bookNotInDatabase(&b) {
 			log.WithFields(log.Fields{
 				"title":  b.Title,
 				"date":   b.Timestamp,
@@ -325,7 +326,7 @@ func (s *scrapeConfig) slowDown() {
 	s.Unlock()
 }
 
-func bookInDatabase(b *CalibreBook) bool {
+func bookNotInDatabase(b *CalibreBook) bool {
 	hash := hashBook(b.Authors[0], b.Title)
 	var book Book
 	err := db.Conn.One("Hash", hash, &book)

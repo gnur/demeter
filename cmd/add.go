@@ -17,6 +17,7 @@ package cmd
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/anonhoarder/demeter/db"
 	"github.com/anonhoarder/demeter/lib"
@@ -36,7 +37,8 @@ var addCmd = &cobra.Command{
 			return
 		}
 		h := lib.Host{
-			URL: args[0],
+			URL:        args[0],
+			LastScrape: time.Now().Add(-20 * 365 * 24 * time.Hour),
 		}
 
 		err = db.Conn.Save(&h)

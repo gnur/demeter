@@ -78,7 +78,9 @@ func (h *Host) Print() {
 	fmt.Printf(`ID: %d
 URL: %s
 Scrapes: %d
-Last scrape: `, h.ID, h.URL, h.Scrapes)
+Downloads: %d
+Active: %b
+Last scrape: `, h.ID, h.URL, h.Scrapes, h.Downloads, h.Active)
 	if h.Scrapes == 0 {
 		fmt.Println("never")
 	} else {
