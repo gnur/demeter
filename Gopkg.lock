@@ -33,6 +33,14 @@
   version = "v1.0.1"
 
 [[projects]]
+  digest = "1:78bbb1ba5b7c3f2ed0ea1eab57bdd3859aec7e177811563edc41198a760b06af"
+  name = "github.com/mitchellh/go-homedir"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
+  version = "v1.0.0"
+
+[[projects]]
   digest = "1:69b1cc331fca23d702bd72f860c6a647afd0aa9fcbc1d0659b1365e26546dd70"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
@@ -83,13 +91,33 @@
   pruneopts = "UT"
   revision = "dcdaa6325bcb8d3c07805583fe12153f08a41e2b"
 
+[[projects]]
+  digest = "1:12398479544afc106c52628ec45900189ab8cbffd4f90afde4c28679d71fc3b9"
+  name = "golang.org/x/text"
+  packages = [
+    "internal/gen",
+    "internal/triegen",
+    "internal/ucd",
+    "runes",
+    "transform",
+    "unicode/cldr",
+    "unicode/norm",
+  ]
+  pruneopts = "UT"
+  revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
+  version = "v0.3.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
     "github.com/asdine/storm",
+    "github.com/mitchellh/go-homedir",
     "github.com/sirupsen/logrus",
     "github.com/spf13/cobra",
+    "golang.org/x/text/runes",
+    "golang.org/x/text/transform",
+    "golang.org/x/text/unicode/norm",
   ]
   solver-name = "gps-cdcl"
   solver-version = 1
