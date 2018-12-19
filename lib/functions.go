@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/anonhoarder/demeter/db"
-	"github.com/asdine/storm"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -207,17 +206,19 @@ func intSliceToString(a []int) string {
 type dlRequest struct {
 	url  string
 	book *CalibreBook
+	hash string
 }
 
 func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan int) {
 	counter := 0
 	for u := range dlChan {
 		counter++
-		output := fmt.Sprintf("worker_%02d_download_%05d.epub", id, counter)
+		output := fmt.Sprintf("worker_%02d_download_%05d_%s.epub", id, counter, u.hash)
 		output = path.Join(s.outputDir, output)
 		s.logger.WithFields(log.Fields{
 			"output": output,
-			"url":    u,
+			"url":    u.url,
+			"hash":   u.hash,
 		}).Info("Downloading file")
 
 		response, err := http.Get(u.url)
@@ -273,7 +274,8 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 			}).Debug("book too old")
 			continue
 		}
-		if !bookNotInDatabase(&b) {
+		inDB, hash := bookInDatabase(&b)
+		if inDB {
 			log.WithFields(log.Fields{
 				"title":  b.Title,
 				"date":   b.Timestamp,
@@ -298,6 +300,7 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 			dlChan <- dlRequest{
 				url:  u.String(),
 				book: &b,
+				hash: hash,
 			}
 		}
 
@@ -326,11 +329,11 @@ func (s *scrapeConfig) slowDown() {
 	s.Unlock()
 }
 
-func bookNotInDatabase(b *CalibreBook) bool {
+func bookInDatabase(b *CalibreBook) (bool, string) {
 	hash := hashBook(b.Authors[0], b.Title)
 	var book Book
 	err := db.Conn.One("Hash", hash, &book)
-	return err == storm.ErrNotFound
+	return err == nil, hash
 }
 
 func (s *scrapeConfig) markBookAsDownloaded(b *CalibreBook) error {
