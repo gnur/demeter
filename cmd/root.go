@@ -59,7 +59,7 @@ retrieving books in epub format that are not in your local library.`,
 			return
 		}
 		dbPath := path.Join(dbDir, "demeter.db")
-		db.Conn, err = storm.Open(dbPath, storm.Codec(msgpack.Codec))
+		db.Conn, err = storm.Open(dbPath, storm.Codec(msgpack.Codec), storm.Batch())
 		if err != nil {
 			log.Fatal(err)
 			return

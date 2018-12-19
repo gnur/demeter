@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,6 +18,9 @@ import (
 	"github.com/anonhoarder/demeter/db"
 	log "github.com/sirupsen/logrus"
 )
+
+var yearRemove = regexp.MustCompile(`\((1|2)[0-9]{3}\)`)
+var drukRemove = regexp.MustCompile(`(?i)/ druk [0-9]+`)
 
 type scrapeConfig struct {
 	sync.Mutex
@@ -28,6 +32,7 @@ type scrapeConfig struct {
 	outputDir   string
 	workers     int
 	stepSize    int
+	failures    int
 	hostID      int
 	logger      *log.Entry
 }
@@ -69,14 +74,15 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*Scra
 	parsed.Path = ""
 
 	s := scrapeConfig{
-		userAgent: userAgent,
-		outputDir: outputDir,
-		stepSize:  stepSize,
-		workers:   workers,
-		maxAge:    h.LastScrape,
-		hostID:    h.ID,
-		timeout:   10 * time.Second,
-		logger:    log.WithField("host", parsed.Hostname()),
+		userAgent:   userAgent,
+		outputDir:   outputDir,
+		stepSize:    stepSize,
+		workers:     workers,
+		maxAge:      h.LastScrape,
+		hostID:      h.ID,
+		timeout:     10 * time.Second,
+		backoffTime: 1 * time.Second,
+		logger:      log.WithField("host", parsed.Hostname()),
 	}
 	s.u = parsed
 
@@ -108,6 +114,7 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*Scra
 	}
 
 	i := 0
+	earlyExit := false
 	for i < len(ids) {
 		max := i + stepSize
 		if max > len(ids) {
@@ -121,7 +128,11 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*Scra
 		err = s.getBooks(parsed.String(), ids[i:max], dlChan)
 		if err != nil {
 			s.logger.WithField("err", err).Error("could not get books")
-			s.slowDown()
+			exit := s.slowDown()
+			if exit {
+				earlyExit = true
+				break
+			}
 		}
 		i += stepSize
 
@@ -145,7 +156,9 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*Scra
 	// ######################################################
 	r.Results = len(ids)
 	r.Downloads = downloaded
-	r.Success = true
+	if !earlyExit {
+		r.Success = true
+	}
 
 	return &r, nil
 
@@ -313,24 +326,31 @@ func (s *scrapeConfig) bookTooOld(b *CalibreBook) bool {
 	return b.Timestamp.Before(s.maxAge)
 }
 
-func (s *scrapeConfig) slowDown() {
+func (s *scrapeConfig) slowDown() bool {
 	s.Lock()
+	s.failures++
 	s.stepSize = s.stepSize / 2
 	if s.stepSize < 15 {
 		s.stepSize = 20
 	}
-	s.backoffTime = (s.backoffTime / 3) * 2
+	s.backoffTime = (s.backoffTime / 2) * 3
 	if s.backoffTime > 30*time.Second {
 		s.backoffTime = 30 * time.Second
 	}
-	s.logger.WithField("duration", s.backoffTime.String()).Warning("slowing down")
+	s.logger.WithFields(log.Fields{
+		"duration": s.backoffTime.String(),
+		"stepsize": s.stepSize,
+	}).Warning("slowing down")
 	time.Sleep(s.backoffTime)
 
 	s.Unlock()
+	return s.failures > 10
 }
 
 func bookInDatabase(b *CalibreBook) (bool, string) {
-	hash := hashBook(b.Authors[0], b.Title)
+	title := fix(b.Title, true, false)
+	author := fix(b.Authors[0], true, true)
+	hash := hashBook(author, title)
 	var book Book
 	err := db.Conn.One("Hash", hash, &book)
 	return err == nil, hash
@@ -346,4 +366,38 @@ func (s *scrapeConfig) markBookAsDownloaded(b *CalibreBook) error {
 	book.SourceID = s.hostID
 
 	return db.Conn.Save(&book)
+}
+
+func fix(s string, capitalize, correctOrder bool) string {
+	if s == "" {
+		return "Unknown"
+	}
+	if capitalize {
+		s = strings.Title(strings.ToLower(s))
+		s = strings.Replace(s, "'S", "'s", -1)
+	}
+	if correctOrder && strings.Contains(s, ",") {
+		sParts := strings.Split(s, ",")
+		if len(sParts) == 2 {
+			s = strings.TrimSpace(sParts[1]) + " " + strings.TrimSpace(sParts[0])
+		}
+	}
+
+	s = yearRemove.ReplaceAllString(s, "")
+	s = drukRemove.ReplaceAllString(s, "")
+	s = strings.Replace(s, ".", " ", -1)
+	s = strings.Replace(s, "  ", " ", -1)
+	s = strings.TrimSpace(s)
+
+	return strings.Map(func(in rune) rune {
+		switch in {
+		case '“', '‹', '”', '›':
+			return '"'
+		case '_':
+			return ' '
+		case '‘', '’':
+			return '\''
+		}
+		return in
+	}, s)
 }
