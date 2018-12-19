@@ -36,7 +36,7 @@ var runCmd = &cobra.Command{
 is old enough it will scrape that host.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		var hosts []lib.Host
-		db.Conn.All(&hosts)
+		db.Conn.Find("Active", true, &hosts)
 
 		if len(hosts) == 0 {
 			log.Info("no hosts were found")

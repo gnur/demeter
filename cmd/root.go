@@ -26,7 +26,9 @@ import (
 	"path"
 
 	"github.com/anonhoarder/demeter/db"
+
 	"github.com/asdine/storm"
+	"github.com/asdine/storm/codec/msgpack"
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -61,11 +63,19 @@ to quickly create a Cobra application.`,
 			return
 		}
 		dbPath := path.Join(dbDir, "demeter.db")
-		db.Conn, err = storm.Open(dbPath)
+		db.Conn, err = storm.Open(dbPath, storm.Codec(msgpack.Codec))
 		if err != nil {
 			log.Fatal(err)
 			return
 		}
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		err := db.Conn.Close()
+		if err != nil {
+			log.WithField("err", err).Error("Could not close database")
+			return
+		}
+
 	},
 }
 
