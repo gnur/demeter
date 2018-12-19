@@ -42,8 +42,8 @@ type BooksQueryResult map[string]CalibreBook
 
 // Host describes all attributes related to a host
 type Host struct {
-	ID            int `storm:"id,increment"`
-	URL           string
+	ID            int    `storm:"id,increment"`
+	URL           string `storm:"unique"`
 	Downloads     int
 	Scrapes       int
 	LastScrape    time.Time
@@ -79,7 +79,7 @@ func (h *Host) Print() {
 URL: %s
 Scrapes: %d
 Downloads: %d
-Active: %b
+Active: %t
 Last scrape: `, h.ID, h.URL, h.Scrapes, h.Downloads, h.Active)
 	if h.Scrapes == 0 {
 		fmt.Println("never")

@@ -15,10 +15,19 @@
 package cmd
 
 import (
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/anonhoarder/demeter/db"
+	"github.com/anonhoarder/demeter/lib"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
-// hostCmd represents the host command
+var deleteID uint32
+
 var hostCmd = &cobra.Command{
 	Use:   "host",
 	Short: "A brief description of your command",
@@ -30,16 +39,150 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 }
 
+var listCmd = &cobra.Command{
+	Use:     "list",
+	Short:   "list all hosts",
+	Aliases: []string{"ls"},
+	Run: func(cmd *cobra.Command, args []string) {
+		var hosts []lib.Host
+		db.Conn.All(&hosts)
+
+		if len(hosts) == 0 {
+			log.Info("no hosts were found")
+		}
+
+		for _, h := range hosts {
+			h.Print()
+		}
+
+	},
+}
+
+var addCmd = &cobra.Command{
+	Use:   "add hosturl",
+	Args:  cobra.ExactArgs(1),
+	Short: "add a host to the scrape list",
+	Run: func(cmd *cobra.Command, args []string) {
+		u, err := url.Parse(args[0])
+		if err != nil {
+			log.WithField("err", err).Error("invalid url provided")
+			return
+		}
+		u.Path = ""
+		h := lib.Host{
+			URL:        strings.ToLower(u.String()),
+			LastScrape: time.Now().Add(-20 * 365 * 24 * time.Hour),
+			Active:     true,
+		}
+
+		err = db.Conn.Save(&h)
+		if err != nil {
+			log.WithField("err", err).Error("could not save")
+			return
+		}
+		log.WithFields(log.Fields{
+			"id":  h.ID,
+			"url": h.URL,
+		}).Info("host has been added to the database")
+	},
+}
+
+var delCmd = &cobra.Command{
+	Use:     "rm hostid",
+	Aliases: []string{"del", "rm", "delete", "remove"},
+	Short:   "delete a host",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var h lib.Host
+		id, err := strconv.Atoi(args[0])
+		if err != nil {
+			log.WithField("err", err).Error("please provide a numeric ID")
+			return
+		}
+		err = db.Conn.One("ID", id, &h)
+		if err != nil {
+			log.WithField("err", err).Error("No host with that ID was found")
+			return
+		}
+		db.Conn.DeleteStruct(&h)
+		log.WithField("host", h.URL).Info("host was removed")
+
+	},
+}
+
+var disableCmd = &cobra.Command{
+	Use:     "disable hostid",
+	Aliases: []string{"dis", "deactivate"},
+	Short:   "disable a host",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var h lib.Host
+		id, err := strconv.Atoi(args[0])
+		if err != nil {
+			log.WithField("err", err).Error("please provide a numeric ID")
+			return
+		}
+		err = db.Conn.One("ID", id, &h)
+		if err != nil {
+			log.WithField("err", err).Error("No host with that ID was found")
+			return
+		}
+		h.Active = false
+		err = db.Conn.UpdateField(&h, "Active", false)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"host":   h.URL,
+				"err":    err,
+				"active": h.Active,
+			}).Error("Could not store new active state")
+			return
+		}
+		log.WithFields(log.Fields{
+			"host":   h.URL,
+			"id":     h.ID,
+			"active": h.Active,
+		}).Info("host was disabled")
+
+	},
+}
+
+var enableCmd = &cobra.Command{
+	Use:     "enabled hostid",
+	Aliases: []string{"en", "activate"},
+	Short:   "make a host active",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var h lib.Host
+		id, err := strconv.Atoi(args[0])
+		if err != nil {
+			log.WithField("err", err).Error("please provide a numeric ID")
+			return
+		}
+		err = db.Conn.One("ID", id, &h)
+		if err != nil {
+			log.WithField("err", err).Error("No host with that ID was found")
+			return
+		}
+		h.Active = true
+		err = db.Conn.Update(&h)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"host":   h.URL,
+				"err":    err,
+				"active": h.Active,
+			}).Error("Could not store new active state")
+			return
+		}
+		log.WithField("host", h.URL).Info("host was activated")
+
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(hostCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// hostCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// hostCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	hostCmd.AddCommand(addCmd)
+	hostCmd.AddCommand(listCmd)
+	hostCmd.AddCommand(delCmd)
+	hostCmd.AddCommand(enableCmd)
+	hostCmd.AddCommand(disableCmd)
 }
