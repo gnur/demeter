@@ -48,30 +48,33 @@ var dlListCmd = &cobra.Command{
 
 // dlListCmd represents the list command
 var dlAddCmd = &cobra.Command{
-	Use:   "add bookhash",
-	Args:  cobra.ExactArgs(1),
-	Short: "add a download",
+	Use:   "add bookhash [bookhash]..",
+	Args:  cobra.MinimumNArgs(1),
+	Short: "add a number of hashes to the database",
 	Run: func(cmd *cobra.Command, args []string) {
-		h := lib.Book{
-			Hash:     args[0],
-			Added:    time.Now(),
-			SourceID: 0,
-		}
+		for _, hash := range args {
+			h := lib.Book{
+				Hash:     hash,
+				Added:    time.Now(),
+				SourceID: 0,
+			}
 
-		err := db.Conn.Save(&h)
-		if err != nil {
-			log.WithField("err", err).Error("could not save")
-			return
+			err := db.Conn.Save(&h)
+			if err != nil {
+				log.WithField("err", err).Error("could not save")
+				continue
+			}
+			log.WithFields(log.Fields{
+				"id":   h.ID,
+				"hash": h.Hash,
+			}).Info("book has been added to the database")
 		}
-		log.WithFields(log.Fields{
-			"id":   h.ID,
-			"hash": h.Hash,
-		}).Info("book has been added to the database")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(dlCmd)
 	dlCmd.AddCommand(dlListCmd)
+	dlCmd.AddCommand(dlAddCmd)
 
 }
