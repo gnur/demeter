@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"math/rand"
 	"time"
 
 	"github.com/anonhoarder/demeter/db"
@@ -39,11 +40,21 @@ is old enough it will scrape that host.`,
 		db.Conn.Find("Active", true, &hosts)
 
 		if len(hosts) == 0 {
-			log.Info("no hosts were found")
+			log.Info("no active hosts were found")
 			return
 		}
 
 		for _, h := range hosts {
+			jitter := time.Duration(rand.Intn(3600))
+			cutOffPoint := time.Now().Add(-jitter).Add(-24 * time.Hour)
+			if !h.LastScrape.Before(cutOffPoint) {
+				log.WithFields(log.Fields{
+					"host":        h.URL,
+					"last_scrape": h.LastScrape,
+				}).Info("not scraping because it is too recent")
+				continue
+
+			}
 			log.WithFields(log.Fields{
 				"workers":   workers,
 				"useragent": userAgent,
