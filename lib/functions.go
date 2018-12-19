@@ -131,6 +131,7 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*Scra
 			exit := s.slowDown()
 			if exit {
 				earlyExit = true
+				s.logger.WithField("failures", s.failures).Error("shutting down early because of failures")
 				break
 			}
 		}
@@ -234,13 +235,19 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 			"hash":   u.hash,
 		}).Info("Downloading file")
 
-		response, err := http.Get(u.url)
+		timeout := time.Duration(3 * time.Minute)
+		client := http.Client{
+			Timeout: timeout,
+		}
+		response, err := client.Get(u.url)
 		if err != nil {
 			s.logger.WithField("err", err).Error("could not download book")
 			s.slowDown()
 			continue
 		}
+		defer response.Body.Close()
 		file, err := os.Create(output)
+		defer file.Close()
 		if err != nil {
 			s.logger.WithField("err", err).Error("could not open output file")
 			continue
@@ -250,8 +257,6 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 			s.logger.WithField("err", err).Error("could not write file with body")
 			continue
 		}
-		file.Close()
-		response.Body.Close()
 		s.markBookAsDownloaded(u.book)
 	}
 	doneChan <- counter
