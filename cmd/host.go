@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 	"strings"
@@ -30,13 +31,7 @@ var deleteID uint32
 
 var hostCmd = &cobra.Command{
 	Use:   "host",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "all host related commands",
 }
 
 var listCmd = &cobra.Command{
@@ -52,7 +47,8 @@ var listCmd = &cobra.Command{
 		}
 
 		for _, h := range hosts {
-			h.Print()
+			h.Print(false)
+			fmt.Println()
 		}
 
 	},
@@ -107,6 +103,27 @@ var delCmd = &cobra.Command{
 		db.Conn.DeleteStruct(&h)
 		log.WithField("host", h.URL).Info("host was removed")
 
+	},
+}
+
+var detailCmd = &cobra.Command{
+	Use:     "stats hostid",
+	Aliases: []string{"detail", "info", "details"},
+	Short:   "Get host stats",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		var h lib.Host
+		id, err := strconv.Atoi(args[0])
+		if err != nil {
+			log.WithField("err", err).Error("please provide a numeric ID")
+			return
+		}
+		err = db.Conn.One("ID", id, &h)
+		if err != nil {
+			log.WithField("err", err).Error("No host with that ID was found")
+			return
+		}
+		h.Print(true)
 	},
 }
 
@@ -185,4 +202,5 @@ func init() {
 	hostCmd.AddCommand(delCmd)
 	hostCmd.AddCommand(enableCmd)
 	hostCmd.AddCommand(disableCmd)
+	hostCmd.AddCommand(detailCmd)
 }

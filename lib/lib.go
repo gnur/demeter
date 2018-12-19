@@ -55,12 +55,22 @@ type Host struct {
 
 // ScrapeResult is the result of a single scrape attempt
 type ScrapeResult struct {
-	Start      time.Time
-	End        time.Time
-	Success    bool
-	Results    int
-	Downloads  int
-	Considered int
+	Start     time.Time
+	End       time.Time
+	Success   bool
+	Results   int
+	Downloads int
+}
+
+// Print prints a scrapeResult in a nicely formatted way
+func (s *ScrapeResult) Print() {
+	niceDuration := s.End.Sub(s.Start).String()
+	fmt.Printf(` - Started:   %s
+   Duration:  %s
+   Success:   %t
+   Downloads: %d
+   Results:   %d`, s.Start.Format(time.RFC3339), niceDuration, s.Success, s.Downloads, s.Results)
+	fmt.Println()
 }
 
 // Book is a oversimplified representation of a book
@@ -74,16 +84,21 @@ type Book struct {
 }
 
 // Print prints a host in a nicely formatted way
-func (h *Host) Print() {
-	fmt.Printf(`ID: %d
-URL: %s
-Scrapes: %d
-Downloads: %d
-Active: %t
-Last scrape: `, h.ID, h.URL, h.Scrapes, h.Downloads, h.Active)
-	if h.Scrapes == 0 {
-		fmt.Println("never")
-	} else {
-		fmt.Println(h.LastScrape)
+func (h *Host) Print(verbose bool) {
+	fmt.Printf(`ID:          %d
+URL:         %s
+Scrapes:     %d
+Downloads:   %d
+Active:      %t`, h.ID, h.URL, h.Scrapes, h.Downloads, h.Active)
+	fmt.Println()
+	if verbose {
+		fmt.Println("Scrape results: ")
+		if h.Scrapes == 0 || len(h.ScrapeResults) == 0 {
+			fmt.Println(" - none")
+		} else {
+			for _, lastScrape := range h.ScrapeResults {
+				lastScrape.Print()
+			}
+		}
 	}
 }
