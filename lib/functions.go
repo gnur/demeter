@@ -80,7 +80,7 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*Scra
 		workers:     workers,
 		maxAge:      h.LastScrape,
 		hostID:      h.ID,
-		timeout:     10 * time.Second,
+		timeout:     2 * time.Second,
 		backoffTime: 1 * time.Second,
 		logger:      log.WithField("host", parsed.Hostname()),
 	}
@@ -255,6 +255,10 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 		_, err = io.Copy(file, response.Body)
 		if err != nil {
 			s.logger.WithField("err", err).Error("could not write file with body")
+			earlyExit := s.slowDown()
+			if earlyExit {
+				break
+			}
 			continue
 		}
 		s.markBookAsDownloaded(u.book)
@@ -279,6 +283,13 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 	log.WithField("results", len(r)).Debug("found books")
 	u.RawQuery = ""
 	for _, b := range r {
+		if len(b.Authors) == 0 {
+			log.WithFields(log.Fields{
+				"title": b.Title,
+				"date":  b.Timestamp,
+			}).Debug("book has no authors")
+			continue
+		}
 		s.logger.WithFields(log.Fields{
 			"date":   b.Timestamp,
 			"title":  b.Title,
@@ -339,11 +350,16 @@ func (s *scrapeConfig) slowDown() bool {
 		s.stepSize = 20
 	}
 	s.backoffTime = (s.backoffTime / 2) * 3
-	if s.backoffTime > 30*time.Second {
+	if s.backoffTime > 45*time.Second {
+		s.backoffTime = 45 * time.Second
+	}
+	s.timeout = (s.timeout / 2) * 3
+	if s.timeout > 30*time.Second {
 		s.backoffTime = 30 * time.Second
 	}
 	s.logger.WithFields(log.Fields{
 		"duration": s.backoffTime.String(),
+		"failures": s.failures,
 		"stepsize": s.stepSize,
 	}).Warning("slowing down")
 	time.Sleep(s.backoffTime)
