@@ -85,19 +85,26 @@ type Book struct {
 
 // Print prints a host in a nicely formatted way
 func (h *Host) Print(verbose bool) {
+	fails := 0
+	for _, scrape := range h.ScrapeResults {
+		if !scrape.Success {
+			fails++
+		}
+	}
 	fmt.Printf(`ID:          %d
 URL:         %s
 Scrapes:     %d
+Fails:       %d
 Downloads:   %d
-Active:      %t`, h.ID, h.URL, h.Scrapes, h.Downloads, h.Active)
+Active:      %t`, h.ID, h.URL, h.Scrapes, fails, h.Downloads, h.Active)
 	fmt.Println()
 	if verbose {
 		fmt.Println("Scrape results: ")
 		if h.Scrapes == 0 || len(h.ScrapeResults) == 0 {
 			fmt.Println(" - none")
 		} else {
-			for _, lastScrape := range h.ScrapeResults {
-				lastScrape.Print()
+			for _, scrape := range h.ScrapeResults {
+				scrape.Print()
 			}
 		}
 	}
