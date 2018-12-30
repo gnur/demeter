@@ -44,6 +44,10 @@ var rootCmd = &cobra.Command{
 retrieving books in epub format that are not in your local library.`,
 
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		log.SetFormatter(&log.TextFormatter{
+			DisableColors: false,
+			FullTimestamp: true,
+		})
 		if verbose {
 			log.SetLevel(log.DebugLevel)
 		}

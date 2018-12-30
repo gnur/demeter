@@ -225,14 +225,25 @@ type dlRequest struct {
 
 func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan int) {
 	counter := 0
+	earlyExit := false
+	l := s.logger.WithField("worker", fmt.Sprintf("worker_%02d", id))
 	for u := range dlChan {
 		counter++
+		if earlyExit {
+			l.WithFields(log.Fields{
+				"counter": counter,
+				"url":     u.url,
+				"hash":    u.hash,
+			}).Warning("not downloading because of an early exit")
+			continue
+		}
 		output := fmt.Sprintf("worker_%02d_download_%05d_%s.epub", id, counter, u.hash)
 		output = path.Join(s.outputDir, output)
-		s.logger.WithFields(log.Fields{
-			"output": output,
-			"url":    u.url,
-			"hash":   u.hash,
+		l.WithFields(log.Fields{
+			"output":  output,
+			"counter": counter,
+			"url":     u.url,
+			"hash":    u.hash,
 		}).Info("Downloading file")
 
 		timeout := time.Duration(3 * time.Minute)
@@ -241,23 +252,26 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 		}
 		response, err := client.Get(u.url)
 		if err != nil {
-			s.logger.WithField("err", err).Error("could not download book")
-			s.slowDown()
+			l.WithField("err", err).Error("could not download book")
+			earlyExit = s.slowDown()
+			if earlyExit {
+				l.Warning("early exit")
+			}
 			continue
 		}
 		defer response.Body.Close()
 		file, err := os.Create(output)
 		defer file.Close()
 		if err != nil {
-			s.logger.WithField("err", err).Error("could not open output file")
+			l.WithField("err", err).Error("could not open output file")
 			continue
 		}
 		_, err = io.Copy(file, response.Body)
 		if err != nil {
-			s.logger.WithField("err", err).Error("could not write file with body")
-			earlyExit := s.slowDown()
+			l.WithField("err", err).Error("could not write file with body")
+			earlyExit = s.slowDown()
 			if earlyExit {
-				break
+				l.Warning("early exit")
 			}
 			continue
 		}
