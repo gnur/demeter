@@ -74,14 +74,6 @@ is old enough it will scrape that host.`,
 						failedScrapes++
 					}
 				}
-				if failedScrapes > 5 {
-					h.Active = false
-					err = db.Conn.UpdateField(&h, "Active", false)
-					log.WithFields(log.Fields{
-						"host":     h.URL,
-						"failures": failedScrapes,
-					}).Warning("Disabling host because of a lot of failures")
-				}
 
 			} else {
 				log.WithFields(log.Fields{
@@ -96,7 +88,8 @@ is old enough it will scrape that host.`,
 			if result.Downloads > 0 {
 				h.LastDownload = result.End
 			}
-			if h.Downloads == 0 && h.Scrapes >= 5 {
+			dls, fails := h.Stats(10)
+			if dls == 0 && fails >= 5 {
 				h.Active = false
 				err = db.Conn.UpdateField(&h, "Active", false)
 				log.WithFields(log.Fields{

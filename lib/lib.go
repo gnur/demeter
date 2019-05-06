@@ -78,7 +78,7 @@ type Book struct {
 	ID       int `storm:"id,increment"`
 	Added    time.Time
 	Hash     string `storm:"unique"`
-	SourceID int    `storm:"index"`
+	SourceID int
 	Author   string
 	Title    string
 }
@@ -91,13 +91,19 @@ func (h *Host) Print(verbose bool) {
 			fails++
 		}
 	}
-	fmt.Printf(`ID:          %d
-URL:         %s
-Scrapes:     %d
-Fails:       %d
-Downloads:   %d
-Active:      %t`, h.ID, h.URL, h.Scrapes, fails, h.Downloads, h.Active)
-	fmt.Println()
+	fails, dls := h.Stats(5)
+	if verbose {
+		fmt.Printf(`ID:          %d
+URL:            %s
+Scrapes:        %d
+Fails:          %d
+Downloads:      %d
+Recent (last5): %d downloads, %d fails
+Active:         %t`, h.ID, h.URL, h.Scrapes, fails, h.Downloads, dls, fails, h.Active)
+		fmt.Println()
+	} else {
+		fmt.Printf(`|%4d|%30s|%5d|%3d|%4d|%4d|%4d|%5t|`, h.ID, h.URL, dls, fails, h.Scrapes, fails, h.Downloads, h.Active)
+	}
 	if verbose {
 		fmt.Println("Scrape results: ")
 		if h.Scrapes == 0 || len(h.ScrapeResults) == 0 {
@@ -108,4 +114,23 @@ Active:      %t`, h.ID, h.URL, h.Scrapes, fails, h.Downloads, h.Active)
 			}
 		}
 	}
+}
+
+// Stats returns usefull stats about the last n scrape runs of a host
+func (h *Host) Stats(n int) (fails, downloads int) {
+	fails = 0
+	downloads = 0
+	count := 0
+	for i := len(h.ScrapeResults) - 1; i >= 0; i-- {
+		count++
+		if count > n {
+			break
+		}
+		scrape := h.ScrapeResults[i]
+		if !scrape.Success {
+			fails++
+		}
+		downloads += scrape.Downloads
+	}
+	return
 }

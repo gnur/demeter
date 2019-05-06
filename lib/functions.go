@@ -395,8 +395,8 @@ func (s *scrapeConfig) markBookAsDownloaded(b *CalibreBook) error {
 
 	var book Book
 	book.Added = time.Now()
-	book.Author = b.Authors[0]
-	book.Title = b.Title
+	book.Author = fix(b.Authors[0], true, true)
+	book.Title = fix(b.Title, true, false)
 	book.Hash = hashBook(b.Authors[0], b.Title)
 	book.SourceID = s.hostID
 

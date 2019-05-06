@@ -52,6 +52,11 @@ var dlAddCmd = &cobra.Command{
 	Args:  cobra.MinimumNArgs(1),
 	Short: "add a number of hashes to the database",
 	Run: func(cmd *cobra.Command, args []string) {
+		tx, err := db.Conn.Begin(true)
+		if err != nil {
+			log.WithField("err", err).Error("could not start transaction")
+			return
+		}
 		for _, hash := range args {
 			h := lib.Book{
 				Hash:     hash,
@@ -59,7 +64,7 @@ var dlAddCmd = &cobra.Command{
 				SourceID: 0,
 			}
 
-			err := db.Conn.Save(&h)
+			err := tx.Save(&h)
 			if err != nil {
 				log.WithField("err", err).Error("could not save")
 				continue
@@ -69,12 +74,48 @@ var dlAddCmd = &cobra.Command{
 				"hash": h.Hash,
 			}).Info("book has been added to the database")
 		}
+		err = tx.Commit()
+		if err != nil {
+			log.WithField("err", err).Error("failed to commit")
+			return
+		}
+	},
+}
+
+var dlDelRecentCmd = &cobra.Command{
+	Use:   "deleterecent 24h",
+	Args:  cobra.ExactArgs(1),
+	Short: "delete all downloads from this time period",
+	Run: func(cmd *cobra.Command, args []string) {
+		duration, err := time.ParseDuration(args[0])
+		if err != nil {
+			log.Error("invalid duration provided")
+			return
+		}
+		cutOffPoint := time.Now().Add(-duration)
+		log.WithField("cutoffpoint", cutOffPoint).Info("Deleting all downloads newer then this date")
+		var books []lib.Book
+		db.Conn.All(&books)
+		deleted := 0
+		scanned := 0
+		for _, b := range books {
+			scanned++
+			if b.Added.After(cutOffPoint) {
+				//db.Conn.DeleteStruct(&b)
+				deleted++
+			}
+		}
+		log.WithFields(log.Fields{
+			"deleted": deleted,
+			"scanned": scanned,
+		}).Info("would have deleted these downloads")
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(dlCmd)
 	dlCmd.AddCommand(dlListCmd)
+	dlCmd.AddCommand(dlDelRecentCmd)
 	dlCmd.AddCommand(dlAddCmd)
 
 }
