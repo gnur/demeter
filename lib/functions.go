@@ -35,9 +35,16 @@ type scrapeConfig struct {
 	failures    int
 	hostID      int
 	logger      *log.Entry
+	semaphore   chan bool
 }
 
 func (s *scrapeConfig) getBody(u string, v interface{}) error {
+	s.semaphore <- true
+	s.Lock()
+	defer func() {
+		<-s.semaphore
+		s.Unlock()
+	}()
 	c := http.Client{
 		Timeout: s.timeout,
 	}
@@ -66,7 +73,7 @@ func (s *scrapeConfig) getBody(u string, v interface{}) error {
 }
 
 // Scrape performs the actual scrape
-func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*ScrapeResult, error) {
+func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string, semaphore chan bool) (*ScrapeResult, error) {
 	parsed, err := url.Parse(h.URL)
 	if err != nil {
 		return nil, err
@@ -84,6 +91,7 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string) (*Scra
 		backoffTime: 1 * time.Second,
 		logger:      log.WithField("host", parsed.Hostname()),
 	}
+	s.semaphore = semaphore
 	s.u = parsed
 
 	r := ScrapeResult{
@@ -228,6 +236,8 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 	earlyExit := false
 	l := s.logger.WithField("worker", fmt.Sprintf("worker_%02d", id))
 	for u := range dlChan {
+		s.semaphore <- true
+		s.Lock()
 		counter++
 		if earlyExit {
 			l.WithFields(log.Fields{
@@ -235,6 +245,8 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 				"url":     u.url,
 				"hash":    u.hash,
 			}).Warning("not downloading because of an early exit")
+			<-s.semaphore
+			s.Unlock()
 			continue
 		}
 		output := fmt.Sprintf("worker_%02d_download_%05d_%s.epub", id, counter, u.hash)
@@ -257,13 +269,23 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 			if earlyExit {
 				l.Warning("early exit")
 			}
+			<-s.semaphore
+			s.Unlock()
 			continue
 		}
 		defer response.Body.Close()
+		if response.StatusCode != 200 {
+			l.WithField("statuscode", response.StatusCode).Warning("file not found")
+			<-s.semaphore
+			s.Unlock()
+			continue
+		}
 		file, err := os.Create(output)
 		defer file.Close()
 		if err != nil {
 			l.WithField("err", err).Error("could not open output file")
+			<-s.semaphore
+			s.Unlock()
 			continue
 		}
 		_, err = io.Copy(file, response.Body)
@@ -273,9 +295,13 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 			if earlyExit {
 				l.Warning("early exit")
 			}
+			<-s.semaphore
+			s.Unlock()
 			continue
 		}
 		s.markBookAsDownloaded(u.book)
+		<-s.semaphore
+		s.Unlock()
 	}
 	doneChan <- counter
 }
@@ -334,7 +360,15 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 
 		if epubPath, ok := b.MainFormat["epub"]; ok {
 			// can get book
-			u.Path = epubPath
+			rawPath, err := url.QueryUnescape(epubPath)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"err":  err,
+					"path": epubPath,
+				}).Error("Could not unescape query")
+				continue
+			}
+			u.Path = rawPath
 			log.WithFields(log.Fields{
 				"title":  b.Title,
 				"author": b.Authors[0],

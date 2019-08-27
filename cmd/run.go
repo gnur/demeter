@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"math/rand"
+	"sync"
 	"time"
 
 	"github.com/anonhoarder/demeter/db"
@@ -44,72 +45,79 @@ is old enough it will scrape that host.`,
 			return
 		}
 
+		semaphore := make(chan bool, 30)
+		var wg sync.WaitGroup
+
 		for _, h := range hosts {
-			jitter := time.Duration(rand.Intn(3600))
-			cutOffPoint := time.Now().Add(-jitter).Add(-24 * time.Hour)
-			if !h.LastScrape.Before(cutOffPoint) {
-				log.WithFields(log.Fields{
-					"host":        h.URL,
-					"last_scrape": h.LastScrape,
-				}).Info("not scraping because it is too recent")
-				continue
+			wg.Add(1)
+			go func(h lib.Host) {
+				defer wg.Done()
+				jitter := time.Duration(rand.Intn(3600)) * time.Second
+				cutOffPoint := time.Now().Add(-jitter).Add(-24 * time.Hour)
+				if !h.LastScrape.Before(cutOffPoint) {
+					log.WithFields(log.Fields{
+						"host":        h.URL,
+						"last_scrape": h.LastScrape,
+					}).Info("not scraping because it is too recent")
+					return
 
-			}
-			log.WithFields(log.Fields{
-				"workers":   workers,
-				"useragent": userAgent,
-				"outputdir": outputDir,
-				"stepsize":  stepSize,
-				"host":      h.URL,
-			}).Debug("Starting scrape")
-			result, err := h.Scrape(workers, stepSize, userAgent, outputDir)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"host": h.URL,
-					"err":  err,
-				}).Error("Scraping failed")
-				failedScrapes := 0
-				for _, s := range h.ScrapeResults {
-					if !s.Success {
-						failedScrapes++
-					}
 				}
-
-			} else {
 				log.WithFields(log.Fields{
+					"workers":   workers,
+					"useragent": userAgent,
+					"outputdir": outputDir,
+					"stepsize":  stepSize,
 					"host":      h.URL,
-					"downloads": result.Downloads,
-					"duration":  time.Since(result.Start).String(),
-					"err":       err,
-				}).Info("Scraping done")
-			}
-			h.Downloads += result.Downloads
-			h.Scrapes++
-			if result.Downloads > 0 {
-				h.LastDownload = result.End
-			}
-			dls, fails := h.Stats(10)
-			if dls == 0 && fails >= 5 {
-				h.Active = false
-				err = db.Conn.UpdateField(&h, "Active", false)
-				log.WithFields(log.Fields{
-					"host":    h.URL,
-					"scrapes": h.Scrapes,
-				}).Warning("Disabling host because there were no new downloads recently")
-			}
-			h.LastScrape = result.End
+				}).Debug("Starting scrape")
+				result, err := h.Scrape(workers, stepSize, userAgent, outputDir, semaphore)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"host": h.URL,
+						"err":  err,
+					}).Error("Scraping failed")
+					failedScrapes := 0
+					for _, s := range h.ScrapeResults {
+						if !s.Success {
+							failedScrapes++
+						}
+					}
 
-			h.ScrapeResults = append(h.ScrapeResults, *result)
-			err = db.Conn.Update(&h)
-			if err != nil {
-				log.WithFields(log.Fields{
-					"host": h.URL,
-					"err":  err,
-				}).Error("Could not store scrape result, exiting hard")
-				return
-			}
+				} else {
+					log.WithFields(log.Fields{
+						"host":      h.URL,
+						"downloads": result.Downloads,
+						"duration":  time.Since(result.Start).String(),
+						"err":       err,
+					}).Info("Scraping done")
+				}
+				h.Downloads += result.Downloads
+				h.Scrapes++
+				if result.Downloads > 0 {
+					h.LastDownload = result.End
+				}
+				dls, fails := h.Stats(10)
+				if dls == 0 && fails >= 5 {
+					h.Active = false
+					err = db.Conn.UpdateField(&h, "Active", false)
+					log.WithFields(log.Fields{
+						"host":    h.URL,
+						"scrapes": h.Scrapes,
+					}).Warning("Disabling host because there were no new downloads recently")
+				}
+				h.LastScrape = result.End
 
+				h.ScrapeResults = append(h.ScrapeResults, *result)
+				err = db.Conn.Update(&h)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"host": h.URL,
+						"err":  err,
+					}).Error("Could not store scrape result, exiting hard")
+					return
+				}
+			}(h)
 		}
+		wg.Wait()
 	},
 }
 
