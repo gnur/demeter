@@ -51,7 +51,11 @@ is old enough it will scrape that host.`,
 		for _, h := range hosts {
 			wg.Add(1)
 			go func(h lib.Host) {
-				defer wg.Done()
+				log.WithField("host", h.URL).Info("Starting work")
+				defer func() {
+					log.WithField("host", h.URL).Info("Finished work")
+					wg.Done()
+				}()
 				jitter := time.Duration(rand.Intn(3600)) * time.Second
 				cutOffPoint := time.Now().Add(-jitter).Add(-24 * time.Hour)
 				if !h.LastScrape.Before(cutOffPoint) {
@@ -113,10 +117,10 @@ is old enough it will scrape that host.`,
 						"host": h.URL,
 						"err":  err,
 					}).Error("Could not store scrape result, exiting hard")
-					return
 				}
 			}(h)
 		}
+		log.Info("waiting for all members in wg to finish")
 		wg.Wait()
 	},
 }

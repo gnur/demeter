@@ -132,7 +132,7 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string, semaph
 			"min":   i,
 			"max":   max,
 			"total": len(ids),
-		}).Info("retrieving books")
+		}).Debug("retrieving books")
 		err = s.getBooks(parsed.String(), ids[i:max], dlChan)
 		if err != nil {
 			s.logger.WithField("err", err).Error("could not get books")
@@ -202,7 +202,7 @@ func (s *scrapeConfig) getIDS() ([]int, error) {
 			"max":   i + s.stepSize,
 			"total": total,
 			"url":   s.u.String(),
-		}).Info("indexing ids")
+		}).Debug("indexing ids")
 		r := SearchResult{}
 		err := s.getBody(s.u.String(), &r)
 		if err != nil {
@@ -373,7 +373,7 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 				"title":  b.Title,
 				"author": b.Authors[0],
 				"url":    u.String(),
-			}).Info("Downloading book")
+			}).Debug("Downloading book")
 			dlChan <- dlRequest{
 				url:  u.String(),
 				book: &b,
