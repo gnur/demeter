@@ -87,8 +87,8 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string, semaph
 		workers:     workers,
 		maxAge:      h.LastScrape,
 		hostID:      h.ID,
-		timeout:     2 * time.Second,
-		backoffTime: 1 * time.Second,
+		timeout:     3 * time.Second,
+		backoffTime: 3 * time.Second,
 		logger:      log.WithField("host", parsed.Hostname()),
 	}
 	s.semaphore = semaphore
@@ -111,7 +111,7 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string, semaph
 	if err != nil {
 		return &r, err
 	}
-	s.logger.WithField("total", len(ids)).Info("found books")
+	s.logger.WithField("total", len(ids)).Debug("found books")
 
 	// ##########################################################
 
@@ -119,6 +119,7 @@ func (h *Host) Scrape(workers, stepSize int, userAgent, outputDir string, semaph
 	doneChan := make(chan int)
 	for w := 1; w <= workers; w++ {
 		go s.bookDLWorker(w, dlChan, doneChan)
+
 	}
 
 	i := 0
@@ -256,7 +257,7 @@ func (s *scrapeConfig) bookDLWorker(id int, dlChan chan dlRequest, doneChan chan
 			"counter": counter,
 			"url":     u.url,
 			"hash":    u.hash,
-		}).Info("Downloading file")
+		}).Debug("Downloading file")
 
 		timeout := time.Duration(3 * time.Minute)
 		client := http.Client{
@@ -326,19 +327,16 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 		if len(b.Authors) == 0 {
 			log.WithFields(log.Fields{
 				"title": b.Title,
-				"date":  b.Timestamp,
 			}).Debug("book has no authors")
 			continue
 		}
 		s.logger.WithFields(log.Fields{
-			"date":   b.Timestamp,
 			"title":  b.Title,
 			"author": b.Authors[0],
 		}).Debug("checking book")
 		if s.bookTooOld(&b) {
 			log.WithFields(log.Fields{
 				"title":  b.Title,
-				"date":   b.Timestamp,
 				"author": b.Authors[0],
 			}).Debug("book too old")
 			continue
@@ -347,7 +345,6 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 		if inDB {
 			log.WithFields(log.Fields{
 				"title":  b.Title,
-				"date":   b.Timestamp,
 				"author": b.Authors[0],
 			}).Debug("book already found in database")
 			continue
@@ -387,7 +384,7 @@ func (s *scrapeConfig) getBooks(rawURL string, ids []int, dlChan chan dlRequest)
 }
 
 func (s *scrapeConfig) bookTooOld(b *CalibreBook) bool {
-	return b.Timestamp.Before(s.maxAge)
+	return b.LastModified.Before(s.maxAge)
 }
 
 func (s *scrapeConfig) slowDown() bool {

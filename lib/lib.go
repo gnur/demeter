@@ -30,7 +30,6 @@ type CalibreBook struct {
 	MainFormat    map[string]string `json:"main_format"`
 	AuthorSort    string            `json:"author_sort"`
 	Authors       []string          `json:"authors"`
-	Timestamp     time.Time         `json:"timestamp"`
 	Languages     []string          `json:"languages"`
 	LastModified  time.Time         `json:"last_modified"`
 	Thumbnail     string            `json:"thumbnail"`
@@ -85,11 +84,16 @@ type Book struct {
 
 // Print prints a host in a nicely formatted way
 func (h *Host) Print(verbose bool) {
-	fails := 0
+	allFails := 0
+	maxBooks := 0
 	for _, scrape := range h.ScrapeResults {
 		if !scrape.Success {
-			fails++
+			allFails++
 		}
+		if scrape.Results > maxBooks {
+			maxBooks = scrape.Results
+		}
+
 	}
 	fails, dls := h.Stats(5)
 	if verbose {
@@ -98,11 +102,12 @@ URL:            %s
 Scrapes:        %d
 Fails:          %d
 Downloads:      %d
+Library size:   %d
 Recent (last5): %d downloads, %d fails
-Active:         %t`, h.ID, h.URL, h.Scrapes, fails, h.Downloads, dls, fails, h.Active)
+Active:         %t`, h.ID, h.URL, h.Scrapes, allFails, h.Downloads, maxBooks, dls, fails, h.Active)
 		fmt.Println()
 	} else {
-		fmt.Printf(`|%4d|%30s|%5d|%3d|%4d|%4d|%4d|%5t|`, h.ID, h.URL, dls, fails, h.Scrapes, fails, h.Downloads, h.Active)
+		fmt.Printf(`%5d|%30s|%7d|%7d|%5d|%6d|%6d|%6t`, h.ID, h.URL, maxBooks, dls, fails, h.Scrapes, h.Downloads, h.Active)
 	}
 	if verbose {
 		fmt.Println("Scrape results: ")

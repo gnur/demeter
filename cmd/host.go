@@ -46,7 +46,11 @@ var listCmd = &cobra.Command{
 			log.Info("no hosts were found")
 		}
 
-		for _, h := range hosts {
+		for i, h := range hosts {
+			if i%25 == 0 {
+				fmt.Printf(`%5s|%30s|%7s|%7s|%5s|%6s|%6s|%6s`, "id", "url", "total", "dls(5)", "fails", "scrape", "dls", "active")
+				fmt.Println()
+			}
 			h.Print(false)
 			fmt.Println()
 		}

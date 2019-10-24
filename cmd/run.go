@@ -125,11 +125,118 @@ is old enough it will scrape that host.`,
 	},
 }
 
+var runCmdV2 = &cobra.Command{
+	Use:   "runv2",
+	Short: "run all scrape jobs with new method",
+	Long: `Go over all defined hosts and if the last scrape
+is old enough it will scrape that host.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		var hosts []lib.Host
+		db.Conn.Find("Active", true, &hosts)
+
+		if len(hosts) == 0 {
+			log.Info("no active hosts were found")
+			return
+		}
+
+		qs := lib.WorkerQueues{
+			IDS:    make(chan lib.GetIDSRequest),
+			Books:  make(chan lib.GetBooksRequest),
+			DlBook: make(chan lib.DownloadBookRequest),
+		}
+
+		a := lib.App{
+			UserAgent:       userAgent,
+			Timeout:         3 * time.Minute,
+			DownloadTimeout: 5 * time.Minute,
+			WorkerInterval:  5 * time.Minute,
+			StepSize:        stepSize,
+			OutputDir:       outputDir,
+			Queues:          qs,
+		}
+
+		for i := 0; i < workers; i++ {
+			go a.Worker(i, qs)
+		}
+		var wg sync.WaitGroup
+
+		for _, h := range hosts {
+			go func(h lib.Host) {
+				log.WithField("host", h.URL).Info("Starting work")
+				jitter := time.Duration(rand.Intn(3600)) * time.Second
+				cutOffPoint := time.Now().Add(-jitter).Add(-24 * time.Hour)
+				if !h.LastScrape.Before(cutOffPoint) {
+					log.WithFields(log.Fields{
+						"host":        h.URL,
+						"last_scrape": h.LastScrape,
+					}).Info("not scraping because it is too recent")
+					return
+				}
+				wg.Add(1)
+				result, err := a.Scrape(&h)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"host": h.URL,
+						"err":  err,
+					}).Error("Scraping failed")
+					failedScrapes := 0
+					for _, s := range h.ScrapeResults {
+						if !s.Success {
+							failedScrapes++
+						}
+					}
+
+				} else {
+					log.WithFields(log.Fields{
+						"host":      h.URL,
+						"downloads": result.Downloads,
+						"duration":  time.Since(result.Start).String(),
+						"err":       err,
+					}).Info("Scraping done")
+				}
+				h.Downloads += result.Downloads
+				h.Scrapes++
+				if result.Downloads > 0 {
+					h.LastDownload = result.End
+				}
+				dls, fails := h.Stats(10)
+				if dls == 0 && fails >= 5 {
+					h.Active = false
+					err = db.Conn.UpdateField(&h, "Active", false)
+					log.WithFields(log.Fields{
+						"host":    h.URL,
+						"scrapes": h.Scrapes,
+					}).Warning("Disabling host because there were no new downloads recently")
+				}
+				h.LastScrape = result.End
+
+				h.ScrapeResults = append(h.ScrapeResults, *result)
+				err = db.Conn.Update(&h)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"host": h.URL,
+						"err":  err,
+					}).Error("Could not store scrape result, exiting hard")
+				}
+				wg.Done()
+			}(h)
+		}
+		time.Sleep(5 * time.Second)
+		wg.Wait()
+	},
+}
+
 func init() {
 	scrapeCmd.AddCommand(runCmd)
+	scrapeCmd.AddCommand(runCmdV2)
 
 	runCmd.Flags().IntVarP(&stepSize, "stepsize", "n", 300, "number of books to request per query")
 	runCmd.Flags().IntVarP(&workers, "workers", "w", 5, "number of workers to concurrently download books")
 	runCmd.Flags().StringVarP(&userAgent, "useragent", "u", "demeter / alpha", "user agent used to identify to calibre hosts")
 	runCmd.Flags().StringVarP(&outputDir, "outputdir", "d", "books", "path to downloaded books to")
+
+	runCmdV2.Flags().IntVarP(&workers, "workers", "w", 10, "number of workers to concurrently download books")
+	runCmdV2.Flags().IntVarP(&stepSize, "stepsize", "n", 50, "number of books to request per query")
+	runCmdV2.Flags().StringVarP(&userAgent, "useragent", "u", "demeter / v2", "user agent used to identify to calibre hosts")
+	runCmdV2.Flags().StringVarP(&outputDir, "outputdir", "d", "books", "path to downloaded books to")
 }
