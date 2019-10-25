@@ -37,9 +37,10 @@ func (a *App) Scrape(h *Host) (*ScrapeResult, error) {
 	}
 	ids := a.filterOldIDs(allIDs, h.ID)
 	log.WithFields(log.Fields{
-		"allIDs": len(allIDs),
-		"ids":    len(ids),
-	}).Info("Filtered results")
+		"host":  h.URL,
+		"total": len(allIDs),
+		"new":   len(ids),
+	}).Info("Found results")
 
 	i := 0
 	toDownload := 0

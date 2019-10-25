@@ -415,7 +415,12 @@ func (s *scrapeConfig) slowDown() bool {
 
 func bookInDatabase(b *CalibreBook) (bool, string) {
 	title := fix(b.Title, true, false)
-	author := fix(b.Authors[0], true, true)
+	var author string
+	if len(b.Authors) == 0 {
+		author = "Unknown"
+	} else {
+		author = fix(b.Authors[0], true, true)
+	}
 	hash := hashBook(author, title)
 	var book Book
 	err := db.Conn.One("Hash", hash, &book)
