@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+
+	"github.com/anonhoarder/demeter/db"
 )
 
 func (a *App) getBody(u string, v interface{}) error {
@@ -122,4 +124,18 @@ func (a *App) getAllIDS(u url.URL) ([]int, error) {
 
 	}
 	return ids, nil
+}
+
+func (a *App) filterOldIDs(ids []int, hostID int) (filtered []int) {
+	var checkID string
+	var found bool
+	for _, id := range ids {
+		checkID = fmt.Sprintf("%d_%d", hostID, id)
+		err := db.Conn.Get("checked_ids", checkID, &found)
+		if err != nil || !found {
+			db.Conn.Set("checked_ids", checkID, true)
+			filtered = append(filtered, id)
+		}
+	}
+	return
 }

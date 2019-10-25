@@ -162,24 +162,20 @@ is old enough it will scrape that host.`,
 
 		for _, h := range hosts {
 			go func(h lib.Host) {
-				log.WithField("host", h.URL).Info("Starting work")
 				jitter := time.Duration(rand.Intn(3600)) * time.Second
 				cutOffPoint := time.Now().Add(-jitter).Add(-24 * time.Hour)
-				if !h.LastScrape.Before(cutOffPoint) {
-					log.WithFields(log.Fields{
-						"host":        h.URL,
-						"last_scrape": h.LastScrape,
-					}).Info("not scraping because it is too recent")
+				if false && !h.LastScrape.Before(cutOffPoint) {
 					return
 				}
+				log.WithField("host", h.URL).Info("Starting work")
 				wg.Add(1)
 				result, err := a.Scrape(&h)
+				failedScrapes := 0
 				if err != nil {
 					log.WithFields(log.Fields{
 						"host": h.URL,
 						"err":  err,
 					}).Error("Scraping failed")
-					failedScrapes := 0
 					for _, s := range h.ScrapeResults {
 						if !s.Success {
 							failedScrapes++
@@ -199,7 +195,13 @@ is old enough it will scrape that host.`,
 				if result.Downloads > 0 {
 					h.LastDownload = result.End
 				}
-				dls, fails := h.Stats(10)
+				fails, dls := h.Stats(10)
+				log.WithFields(log.Fields{
+					"dls":            dls,
+					"fails":          fails,
+					"failedScrapes":  failedScrapes,
+					"result.success": result.Success,
+				}).Debug("info")
 				if dls == 0 && fails >= 5 {
 					h.Active = false
 					err = db.Conn.UpdateField(&h, "Active", false)

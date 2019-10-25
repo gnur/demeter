@@ -31,10 +31,16 @@ func (a *App) Scrape(h *Host) (*ScrapeResult, error) {
 		return &r, err
 	}
 
-	ids, err := a.getAllIDS(*parsed)
+	allIDs, err := a.getAllIDS(*parsed)
 	if err != nil {
 		return &r, err
 	}
+	ids := a.filterOldIDs(allIDs, h.ID)
+	log.WithFields(log.Fields{
+		"allIDs": len(allIDs),
+		"ids":    len(ids),
+	}).Info("Filtered results")
+
 	i := 0
 	toDownload := 0
 	dlResultQueue := make(chan DownloadBookResponse, len(ids))
