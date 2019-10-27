@@ -163,8 +163,8 @@ is old enough it will scrape that host.`,
 		for _, h := range hosts {
 			go func(h lib.Host) {
 				jitter := time.Duration(rand.Intn(3600)) * time.Second
-				cutOffPoint := time.Now().Add(-jitter).Add(-24 * time.Hour)
-				if false && !h.LastScrape.Before(cutOffPoint) {
+				cutOffPoint := time.Now().Add(-jitter).Add(-12 * time.Hour)
+				if !h.LastScrape.Before(cutOffPoint) {
 					return
 				}
 				log.WithField("host", h.URL).Info("Starting work")
