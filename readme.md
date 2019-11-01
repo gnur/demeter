@@ -6,11 +6,7 @@ It will only allow a scrape of a host every 24 hours to prevent hammering a host
 
 # usage
 
-download the correct demeter binary for your platform:
-
-- macOS 64 bit: https://mega.nz/#!RaBBUKTQ!ILHtKhKpbi4WZHwrxMGvJZjQMjiRSs53DwVeubyQ6B4
-- linux 64 bit: https://mega.nz/#!BfATlaiJ!kyo1fgmTCrnlrWnfmG4w3SEBogLHyyGQA5nQovkdofo
-- linux raspberry pi: https://mega.nz/#!pGIxCKAK!XAGSwROzMWY_HpP0Uj_BDgtuehPN_qExT9PtdI9Ynf4
+download the correct demeter binary for your platform from the releases page
 
 move it somewhere in your $PATH so you can call it with `demeter`
 
@@ -26,6 +22,9 @@ There is also a `demeter scrape run` command which might also work but probably 
 For the rest, use the built in help.
 
 This tool should be used for whatever you want, enjoy.
+
+# database
+Demeter builds an internal database that is stored in ~/.demeter/demeter.db
 
 # scraping
 
