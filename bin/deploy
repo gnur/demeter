@@ -29,4 +29,4 @@ git push --follow-tags origin master
 
 askContinue "Create release?"
 
-goreleaser
+goreleaser --rm-dist
