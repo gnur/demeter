@@ -1,0 +1,32 @@
+#!/bin/bash
+
+function askContinue {
+	echo
+	if [[ "${1}" != "" ]]; then
+		echo "${1}"
+	fi
+	echo "Continue? "
+	read ok
+
+	if [[ ! "${ok}" =~ ^[yY]+.* ]]; then
+		exit 1
+	fi
+
+}
+
+source ~/.global-env
+
+standard-version --dry-run
+
+askContinue "Create changelog?"
+
+standard-version
+
+
+askContinue "Push to master?"
+
+git push --follow-tags origin master
+
+askContinue "Create release?"
+
+goreleaser
