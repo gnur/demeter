@@ -21,8 +21,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/anonhoarder/demeter/db"
-	"github.com/anonhoarder/demeter/lib"
+	"github.com/gnur/demeter/db"
+	"github.com/gnur/demeter/lib"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )

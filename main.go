@@ -20,7 +20,7 @@
 
 package main
 
-import "github.com/anonhoarder/demeter/cmd"
+import "github.com/gnur/demeter/cmd"
 
 func main() {
 	cmd.Execute()

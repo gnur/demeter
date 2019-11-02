@@ -1,4 +1,4 @@
-module github.com/anonhoarder/demeter
+module github.com/gnur/demeter
 
 require (
 	github.com/DataDog/zstd v1.4.0 // indirect

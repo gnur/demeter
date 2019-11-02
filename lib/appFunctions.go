@@ -10,7 +10,7 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/anonhoarder/demeter/db"
+	"github.com/gnur/demeter/db"
 )
 
 func (a *App) getBody(u string, v interface{}) error {

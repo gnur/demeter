@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/anonhoarder/demeter/db"
+	"github.com/gnur/demeter/db"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -25,7 +25,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/anonhoarder/demeter/db"
+	"github.com/gnur/demeter/db"
 
 	"github.com/asdine/storm"
 	"github.com/asdine/storm/codec/msgpack"
