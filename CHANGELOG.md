@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/gnur/demeter/compare/v1.0.3...v2.0.0) (2019-11-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* Removed runv2 command
+
+### Features
+
+* Removed old run and replaced it with runv2 ([8b5fa0e](https://github.com/gnur/demeter/commit/8b5fa0e39d294cd04a4216cc70c5d748c13891f0))
+
 ### [1.0.3](https://github.com/gnur/demeter/compare/v1.0.2...v1.0.3) (2019-11-02)
 
 ### [1.0.2](https://github.com/gnur/demeter/compare/v1.0.1...v1.0.2) (2019-11-02)
