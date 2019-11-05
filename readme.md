@@ -4,9 +4,11 @@ Demeter is a tool for sucking all the epubs you don't have yet from a calibre li
 
 It will only allow a scrape of a host every 12 hours to prevent hammering a host.
 
-# usage
+# installation and usage
 
-download the correct demeter binary for your platform from the releases page
+download the correct demeter binary for your platform from the [releases](https://github.com/gnur/demeter/releases) page
+
+This is a standalone binary, there is no need to install any dependencies.
 
 move it somewhere in your \$PATH so you can call it with `demeter`
 
