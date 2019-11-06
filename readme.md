@@ -39,3 +39,72 @@ When scraping a host, demeter does the following:
 - download the book if it isn't and add it to the internal db
 - mark the host as scraped so it won't do it again within 12 hours
 - if the host failed, mark it as failed and disable it after a while
+
+# all commands
+
+```
+$ demeter -h
+demeter is CLI application for scraping calibre hosts and
+retrieving books in epub format that are not in your local library.
+
+Usage:
+  demeter [command]
+
+Available Commands:
+  dl          download related commands
+  help        Help about any command
+  host        all host related commands
+  scrape      all scrape related commands
+
+$ demeter dl -h
+download related commands
+
+Usage:
+  demeter dl [command]
+
+Aliases:
+  dl, download, downloads, dls
+
+Available Commands:
+  add          add a number of hashes to the database
+  deleterecent delete all downloads from this time period
+  list         list all downloads
+
+$ demeter host -h
+all host related commands
+
+Usage:
+  demeter host [command]
+
+Available Commands:
+  add         add a host to the scrape list
+  disable     disable a host
+  enabled     make a host active
+  list        list all hosts
+  rm          delete a host
+  stats       Get host stats
+
+$ demeter scrape -h
+all scrape related commands
+
+Usage:
+  demeter scrape [command]
+
+Available Commands:
+  run         run all scrape jobs
+
+$ demeter scrape run -h
+demeter scrape run -h
+Go over all defined hosts and if the last scrape
+is old enough it will scrape that host.
+
+Usage:
+  demeter scrape run [flags]
+
+Flags:
+  -h, --help               help for run
+  -d, --outputdir string   path to downloaded books to (default "books")
+  -n, --stepsize int       number of books to request per query (default 50)
+  -u, --useragent string   user agent used to identify to calibre hosts (default "demeter / v1")
+  -w, --workers int        number of workers to concurrently download books (default 10)
+```
