@@ -1,44 +1,44 @@
 # demeter
 
-Demeter is a tool for sucking all the epubs you don't have yet from a calibre library. It does this by internally building a list of books it has seen based on some clever algorithms. At least, that's the idea.
+demeter is a tool for downloading the .epub files you don't have from a Calibre library. It does this by building a database of books it has seen based on some clever algorithms. At least, that's the idea.
 
-It will only allow a scrape of a host every 12 hours to prevent hammering a host.
+(Demeter only allows scraping a host every 12 hours to prevent overloading the server.)
 
-# installation and usage
+# Installation and Usage
 
-download the correct demeter binary for your platform from the [releases](https://github.com/gnur/demeter/releases) page
+Download the appropriate demeter binary for your platform from the [releases](https://github.com/gnur/demeter/releases) page.
 
-This is a standalone binary, there is no need to install any dependencies.
+This is a standalone binary, there's no need to install any dependencies.
 
-move it somewhere in your \$PATH so you can call it with `demeter`
+Move it somewhere in your \$PATH so you can call it with `demeter`
 
-## add a host
+## Add a Host
 
 `demeter host add http://example.com:8080`
 
-## scrape all hosts and store results in the directory ./books
+## Scrape all hosts and store results in the directory ./books
 
 `demeter scrape run -d books`
 
 For the rest, use the built in help.
 
-This tool should be used for whatever you want, enjoy.
+This tool can be used for whatever you want, enjoy.
 
-# database
+# Database
 
 Demeter builds an internal database that is stored in ~/.demeter/demeter.db
 
-# scraping
+# Scraping
 
 When scraping a host, demeter does the following:
 
-- use the API to collect all book ids
-- check if there a new book ids since the previous scrape
-- use the API to get the details for all the new book ids
-- check the internal db if a book has already been downloaded
-- download the book if it isn't and add it to the internal db
-- mark the host as scraped so it won't do it again within 12 hours
-- if the host failed, mark it as failed and disable it after a while
+- Use the API to collect all book ids
+- Check if there a new book ids since the previous scrape
+- Use the API to get the details for all the new book ids
+- Check the internal db if a book has already been downloaded
+- Download the book if it isn't and add it to the internal db
+- Mark the host as scraped so it won't do it again within 12 hours
+- If the host failed, mark it as failed and disable it after a while
 
 # all commands
 
