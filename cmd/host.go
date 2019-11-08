@@ -59,31 +59,33 @@ var listCmd = &cobra.Command{
 }
 
 var addCmd = &cobra.Command{
-	Use:   "add hosturl",
-	Args:  cobra.ExactArgs(1),
-	Short: "add a host to the scrape list",
+	Use:   "add hosturl [hosturl] ...",
+	Args:  cobra.MinimumNArgs(1),
+	Short: "add one or more hosts to the scrape list",
 	Run: func(cmd *cobra.Command, args []string) {
-		u, err := url.Parse(args[0])
-		if err != nil {
-			log.WithField("err", err).Error("invalid url provided")
-			return
-		}
-		u.Path = ""
-		h := lib.Host{
-			URL:        strings.ToLower(u.String()),
-			LastScrape: time.Now().Add(-20 * 365 * 24 * time.Hour),
-			Active:     true,
-		}
+		for _, hosturl := range args {
+			u, err := url.Parse(hosturl)
+			if err != nil {
+				log.WithField("err", err).Error("invalid url provided")
+				return
+			}
+			u.Path = ""
+			h := lib.Host{
+				URL:        strings.ToLower(u.String()),
+				LastScrape: time.Now().Add(-20 * 365 * 24 * time.Hour),
+				Active:     true,
+			}
 
-		err = db.Conn.Save(&h)
-		if err != nil {
-			log.WithField("err", err).Error("could not save")
-			return
+			err = db.Conn.Save(&h)
+			if err != nil {
+				log.WithField("err", err).Error("could not save")
+				return
+			}
+			log.WithFields(log.Fields{
+				"id":  h.ID,
+				"url": h.URL,
+			}).Info("host has been added to the database")
 		}
-		log.WithFields(log.Fields{
-			"id":  h.ID,
-			"url": h.URL,
-		}).Info("host has been added to the database")
 	},
 }
 
