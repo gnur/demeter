@@ -32,6 +32,7 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	bolt "go.etcd.io/bbolt"
 )
 
 var verbose bool
@@ -64,6 +65,9 @@ retrieving books in epub format that are not in your local library.`,
 		}
 		dbPath := path.Join(dbDir, "demeter.db")
 		db.Conn, err = storm.Open(dbPath, storm.Codec(msgpack.Codec), storm.Batch())
+		if err == bolt.ErrTimeout {
+			log.Fatal("It looks like another demeter process is already running")
+		}
 		if err != nil {
 			log.Fatal(err)
 			return
