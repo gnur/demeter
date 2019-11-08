@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/gnur/demeter/compare/v2.0.0...v2.1.0) (2019-11-08)
+
+
+### Features
+
+* **hosts:** Allow multiple hosts to be added at once ([5e00138](https://github.com/gnur/demeter/commit/5e00138858e1fb60ec867731faac9bda2c08bf19)), closes [#1](https://github.com/gnur/demeter/issues/1)
+
+
+### Bug Fixes
+
+* Improve error message on timeout ([41fbb50](https://github.com/gnur/demeter/commit/41fbb501d8df95680a8bd28f6adf44d18589956b)), closes [#2](https://github.com/gnur/demeter/issues/2)
+
 ## [2.0.0](https://github.com/gnur/demeter/compare/v1.0.3...v2.0.0) (2019-11-05)
 
 
