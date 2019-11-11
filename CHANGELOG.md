@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0](https://github.com/gnur/demeter/compare/v2.1.0...v2.2.0) (2019-11-11)
+
+
+### Features
+
+* **info:** Added version subcommand ([0c3d8fd](https://github.com/gnur/demeter/commit/0c3d8fd891d9e47b09168aaf59cb3396911fbe14))
+
 ## [2.1.0](https://github.com/gnur/demeter/compare/v2.0.0...v2.1.0) (2019-11-08)
 
 
