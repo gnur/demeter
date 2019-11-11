@@ -230,6 +230,7 @@ func init() {
 	hostCmd.AddCommand(listCmd)
 	hostCmd.AddCommand(delCmd)
 	hostCmd.AddCommand(enableCmd)
+	hostCmd.AddCommand(enableAllCmd)
 	hostCmd.AddCommand(disableCmd)
 	hostCmd.AddCommand(detailCmd)
 }
