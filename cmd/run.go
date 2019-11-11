@@ -114,7 +114,7 @@ is old enough it will scrape that host.`,
 					log.WithFields(log.Fields{
 						"host":    h.URL,
 						"scrapes": h.Scrapes,
-					}).Warning("Disabling host because there were no new downloads recently")
+					}).Warning("Disabling host because there were 5 failures and no new downloads")
 				}
 				h.LastScrape = result.End
 
