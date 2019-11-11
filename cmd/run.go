@@ -77,11 +77,13 @@ is old enough it will scrape that host.`,
 				wg.Add(1)
 				result, err := a.Scrape(&h)
 				failedScrapes := 0
+				h.LastRunSuccessful = true
 				if err != nil {
 					log.WithFields(log.Fields{
 						"host": h.URL,
 						"err":  err,
 					}).Error("Scraping failed")
+					h.LastRunSuccessful = false
 					for _, s := range h.ScrapeResults {
 						if !s.Success {
 							failedScrapes++
@@ -108,7 +110,7 @@ is old enough it will scrape that host.`,
 					"failedScrapes":  failedScrapes,
 					"result.success": result.Success,
 				}).Debug("info")
-				if dls == 0 && fails >= 5 {
+				if dls == 0 && fails >= 5 && !h.LastRunSuccessful {
 					h.Active = false
 					err = db.Conn.UpdateField(&h, "Active", false)
 					log.WithFields(log.Fields{

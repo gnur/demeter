@@ -41,15 +41,16 @@ type BooksQueryResult map[string]CalibreBook
 
 // Host describes all attributes related to a host
 type Host struct {
-	ID            int    `storm:"id,increment"`
-	URL           string `storm:"unique"`
-	Downloads     int
-	Scrapes       int
-	LastScrape    time.Time
-	LastDownload  time.Time
-	Added         time.Time
-	ScrapeResults []ScrapeResult
-	Active        bool
+	ID                int    `storm:"id,increment"`
+	URL               string `storm:"unique"`
+	Downloads         int
+	Scrapes           int
+	LastScrape        time.Time
+	LastDownload      time.Time
+	Added             time.Time
+	ScrapeResults     []ScrapeResult
+	Active            bool
+	LastRunSuccessful bool
 }
 
 // ScrapeResult is the result of a single scrape attempt

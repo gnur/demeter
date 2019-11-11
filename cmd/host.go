@@ -203,7 +203,7 @@ var enableCmd = &cobra.Command{
 
 var enableAllCmd = &cobra.Command{
 	Use:   "enable-all",
-	Short: "make a host active",
+	Short: "make all hosts active",
 	Run: func(cmd *cobra.Command, args []string) {
 		var hosts []lib.Host
 		db.Conn.All(&hosts)
