@@ -114,7 +114,7 @@ var delCmd = &cobra.Command{
 
 var detailCmd = &cobra.Command{
 	Use:     "stats hostid",
-	Aliases: []string{"detail", "info", "details"},
+	Aliases: []string{"detail", "info", "details", "stats"},
 	Short:   "Get host stats",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -135,7 +135,7 @@ var detailCmd = &cobra.Command{
 
 var disableCmd = &cobra.Command{
 	Use:     "disable hostid",
-	Aliases: []string{"dis", "deactivate"},
+	Aliases: []string{"dis", "deactivate", "disable"},
 	Short:   "disable a host",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -170,8 +170,8 @@ var disableCmd = &cobra.Command{
 }
 
 var enableCmd = &cobra.Command{
-	Use:     "enabled hostid",
-	Aliases: []string{"en", "activate"},
+	Use:     "enable hostid",
+	Aliases: []string{"en", "activate", "enable"},
 	Short:   "make a host active",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -197,6 +197,29 @@ var enableCmd = &cobra.Command{
 			return
 		}
 		log.WithField("host", h.URL).Info("host was activated")
+
+	},
+}
+
+var enableAllCmd = &cobra.Command{
+	Use:   "enable-all",
+	Short: "make a host active",
+	Run: func(cmd *cobra.Command, args []string) {
+		var hosts []lib.Host
+		db.Conn.All(&hosts)
+		for _, h := range hosts {
+			h.Active = true
+			err := db.Conn.Update(&h)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"host":   h.URL,
+					"err":    err,
+					"active": h.Active,
+				}).Error("Could not store new active state")
+				return
+			}
+			log.WithField("host", h.URL).Info("host was activated")
+		}
 
 	},
 }
