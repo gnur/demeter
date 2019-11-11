@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0](https://github.com/gnur/demeter/compare/v2.2.0...v2.3.0) (2019-11-11)
+
+
+### Features
+
+* **Add host enable-all command:** demeter host enable-all re-enables all hosts ([be807ae](https://github.com/gnur/demeter/commit/be807aedfe7019dde9018c5b899a7e59a107f968))
+* Hosts don't get disabled if the last run succeeded ([2651241](https://github.com/gnur/demeter/commit/26512413435174aad101ddf9712bca1659fd60fa))
+
+
+### Bug Fixes
+
+* Added the enable all command to options ([0138c33](https://github.com/gnur/demeter/commit/0138c332584631e79fc36f67fb4fbd9b280a1810))
+
 ## [2.2.0](https://github.com/gnur/demeter/compare/v2.1.0...v2.2.0) (2019-11-11)
 
 
