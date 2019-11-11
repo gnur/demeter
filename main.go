@@ -22,6 +22,16 @@ package main
 
 import "github.com/gnur/demeter/cmd"
 
+var version string
+var commit string
+var date string
+var builtBy string
+
 func main() {
-	cmd.Execute()
+	cmd.Execute(cmd.Info{
+		Version: version,
+		Commit:  commit,
+		Date:    date,
+		BuiltBy: builtBy,
+	})
 }

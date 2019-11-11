@@ -83,9 +83,20 @@ retrieving books in epub format that are not in your local library.`,
 	},
 }
 
+// Info holds info related to the build process
+type Info struct {
+	Version string
+	Commit  string
+	Date    string
+	BuiltBy string
+}
+
+var info Info
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
+func Execute(in Info) {
+	info = in
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
