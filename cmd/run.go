@@ -29,6 +29,7 @@ var stepSize int
 var workers int
 var userAgent string
 var outputDir string
+var extension string
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
@@ -58,6 +59,7 @@ is old enough it will scrape that host.`,
 			WorkerInterval:  5 * time.Minute,
 			StepSize:        stepSize,
 			OutputDir:       outputDir,
+			Extension:       extension,
 			Queues:          qs,
 		}
 
@@ -143,4 +145,5 @@ func init() {
 	runCmd.Flags().IntVarP(&workers, "workers", "w", 10, "number of workers to concurrently download books")
 	runCmd.Flags().StringVarP(&userAgent, "useragent", "u", "demeter / v1", "user agent used to identify to calibre hosts")
 	runCmd.Flags().StringVarP(&outputDir, "outputdir", "d", "books", "path to downloaded books to")
+	runCmd.Flags().StringVarP(&extension, "extension", "e", "epub", "extension of files to download")
 }

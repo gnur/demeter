@@ -39,7 +39,10 @@ var dlListCmd = &cobra.Command{
 	Aliases: []string{"ls"},
 	Run: func(cmd *cobra.Command, args []string) {
 		var books []lib.Book
-		db.Conn.All(&books)
+		err := db.Conn.All(&books)
+		if err != nil {
+			fmt.Printf("Error listing downloads: %e\n", err)
+		}
 
 		fmt.Println("Total downloads: ", len(books))
 

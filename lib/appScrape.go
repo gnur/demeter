@@ -59,13 +59,13 @@ func (a *App) Scrape(h *Host) (*ScrapeResult, error) {
 		}
 		for _, b := range bs {
 			if present, hash := bookInDatabase(&b); !present {
-				if epubPath, ok := b.MainFormat["epub"]; ok {
-					rawPath, err := url.QueryUnescape(epubPath)
+				if fPath, ok := b.MainFormat[a.Extension]; ok {
+					rawPath, err := url.QueryUnescape(fPath)
 					if err != nil {
 						continue
 					}
 					parsed.Path = rawPath
-					output := fmt.Sprintf("%s.epub", hash)
+					output := fmt.Sprintf("%s.%s", hash, a.Extension)
 					output = path.Join(a.OutputDir, output)
 					//TODO: dit in go routine
 					a.Queues.DlBook <- DownloadBookRequest{

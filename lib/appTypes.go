@@ -11,6 +11,7 @@ type App struct {
 	Timeout         time.Duration
 	DownloadTimeout time.Duration
 	WorkerInterval  time.Duration
+	Extension       string
 	StepSize        int
 	OutputDir       string
 	Queues          WorkerQueues

@@ -16,13 +16,17 @@ Move it somewhere in your \$PATH so you can call it with `demeter`
 
 `demeter host add http://example.com:8080`
 
-## Scrape all hosts and store results in the directory ./books
+## Scrape all hosts and store results in the directory ./books and only download the extension pdf
 
-`demeter scrape run -d books`
+`demeter scrape run -d books -e pdf`
 
 For the rest, use the built in help.
 
 This tool can be used for whatever you want, enjoy.
+
+## important note regarding extensions
+
+The -e flag on the `scrape run` command only affects that specific run, the books are stored without any extension information in the database. In general that means that if you switch from the `-e epub` (default) to `-e mobi`, you will only download new books in the mobi extension. Books that were already present will not be re-downloaded in a different extension.
 
 # Database
 
