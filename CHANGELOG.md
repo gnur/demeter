@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.4.0](https://github.com/gnur/demeter/compare/v2.3.0...v2.4.0) (2020-08-28)
+
+
+### Features
+
+* **file format:** Allow filtering other file formats then epub ([16fce3a](https://github.com/gnur/demeter/commit/16fce3aafe3ab4db465c88cdd90135e2e798f513)), closes [#3](https://github.com/gnur/demeter/issues/3)
+
 ## [2.3.0](https://github.com/gnur/demeter/compare/v2.2.0...v2.3.0) (2019-11-11)
 
 
